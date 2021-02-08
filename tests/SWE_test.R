@@ -11,56 +11,72 @@ library(dplyr)
 
 ## Input and prep
 
-frog <- read.csv("C:/Users/msears/OneDrive - DOI/WB-cross check/FrogRock-inputforR.csv")
+setwd("C:/Users/msears/OneDrive - DOI/WB_crosscheck/")
+
+frog <- read.csv("C:/Users/msears/OneDrive - DOI/WB_crosscheck/FrogRock-inputforR.csv")
 
 frog <- frog %>%
   mutate(tmean = (tmin_degC+tmax_degC)/2)
 
 ## Functions
 
-# Get freeze #s first
+# Get freeze first
+low_thresh_temp = frog$Jenningcoeff-3 
+high_thresh_temp = frog$Jenningcoeff+3
 
-get_freeze_jennings = function(tmean, high_thresh_temperature, low_thresh_temperature){ 
-  freeze = ifelse(tmean <= low_thresh_temperature, 0, ifelse(tmean >= high_thresh_temperature, 1, (1/(high_thresh_temperature - low_thresh_temperature))*(tmean - low_thresh_temperature)))
-  return(freeze)
+
+frog <- frog %>% #need to go back and fix this so the first time step has different equation & write as function
+  mutate(freeze = ifelse(
+    tmean <= low_thresh_temp, 0, 
+    ifelse(tmean >= high_thresh_temp,
+           1, (0.167*(tmean-low_thresh_temp)))))
+
+#write.csv(frog, "Freeze_compare.csv") #checking freeze to DT
+
+# Get rain
+get_rain = function(freeze, precip){
+  rain = freeze*precip
+  return(rain)
 }
 
-low_thresh_temperature = (2.155578-3.0) # the first numbers in these lines come from D. Thoma's parameter/input Frog Rock xlsx
-high_thresh_temperature = (2.15578+3.0) 
-
-frog$freeze <- get_freeze_jennings(frog$tmean, high_thresh_temperature, low_thresh_temperature)
+frog$rain <- get_rain(frog$freeze, frog$precip_mmday)
 
 # Get snow
-
-frog_input$snow <- (1-frog_input$freeze)*frog_input$prcp
-
-# Get snowpack
-
-get_snowpack = function(ppt, freeze, p.0=NULL){
-  p.i = ifelse(!is.null(p.0), p.0, 0) 
-  snowpack = c()
-  for(i in 1:length(ppt)){
-    snowpack[i] = ((1-freeze[i])^2)*ppt[i] + (1-freeze[i])*p.i
-    p.i = snowpack[i]
-  }
-  return(snowpack)
+get_snow = function(freeze, precip){
+  snow = (1-freeze)*precip
+  return(snow)
 }
 
-frog_input$pack <- get_snowpack(frog_input$prcp, frog_input$freeze, p.0 = NULL)
+frog$snow <- get_snow(frog$freeze, frog$precip_mmday)
 
 # Get melt
-
-get_melt = function(snowpack, snow, freeze, p.0=NULL){
+get_melt = function(tmean, low_thresh_temp, pack, hock, p.0=NULL){
   p.i = ifelse(!is.null(p.0), p.0, 0)
   melt = c()
-  for(i in 1:length(snowpack)){
-    melt[i] = freeze[i]*(p.i + snow[i])
-    p.i = snowpack[i]
+  for(i in 1:length(tmean)){
+    melt[i] = ifelse(tmean[i]<low_thresh_temp||p.i==0, 0, 
+                     ifelse((tmean[i]-low_thresh_temp)*hock[i]>p.i, 
+                            p.i, (tmean[i]-low_thresh_temp)*hock[i]))
+    p.i = pack[i]
   }
   return(melt)
 }
 
-frog_input$melt <- get_melt(frog_input$pack, frog_input$snow, frog_input$freeze, p.0 = NULL)
+frog$melt <- get_melt(frog$tmean, low_thresh_temp, frog$pack, frog$hock, p.0 = NULL)
+
+# Get pack
+get_pack = function(snow, melt, p.0=NULL){
+  p.i = ifelse(!is.null(p.0), p.0, 0)
+  pack = c()
+  for (i in 1:length(snow)){
+    pack[i] = p.i+snow[i]-melt[i]
+    p.i=pack[i]
+  }
+  return(pack)
+}
+
+frog$pack <- get_pack(frog$snow, frog$melt, p.0=NULL)
+
 
 ## Write as csv to compare to DT and MT
 write.csv(frog_input, "C:/Users/msears/OneDrive - DOI/WB-cross check/SWE_output")
