@@ -4,7 +4,7 @@
 
 # Annie Kellner
 # 11/13/2020
-#Megan Sears picked up 1/13/2021
+# Megan Sears picked up 1/13/2021
 
 # PACK (D. Thoma) = init.value - melt + snowfall #
 rm(list = ls())
