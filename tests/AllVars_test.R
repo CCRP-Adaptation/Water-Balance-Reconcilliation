@@ -78,7 +78,6 @@ get_pack = function(snow, melt, p.0=NULL){
 
 frog$pack <- get_pack(frog$snow, frog$melt, p.0=NULL)
 
-#--------------------------------------------------------------------------------#
 #adding melt and pack loops together
 get_pack_melt = function(tmean,low_thresh_temp, hock, snow, p.0=NULL){
     p.i = ifelse(!is.null(p.0), p.0, 0)
@@ -98,5 +97,27 @@ get_pack_melt = function(tmean,low_thresh_temp, hock, snow, p.0=NULL){
 frog$pack <- get_pack_melt(frog$tmean, low_thresh_temp, frog$Hock, frog$snow, p.0=NULL)
 frog$melt <- get_pack_melt(frog$tmean, low_thresh_temp, frog$Hock, frog$snow, p.0=NULL)
 
-## Write as csv to compare to DT and MT
-write.csv(frog_input, "C:/Users/msears/OneDrive - DOI/WB-cross check/SWE_output")
+## Write as csv to compare (rain, snow, pack, melt) to DT and MT before moving on
+write.csv(frog, "C:/Users/msears/OneDrive - DOI/WB-cross check/SWE_output")
+
+# W (water reaching soil as rain + melt) - rain + melt
+
+# PET using Oudin equation - first calculate Oudin location
+# Oudin = if pack>2, 0, if(rad Ra>-5,solar*(rad Ra+5)*.408/100,0) 
+# to get rad Ra determine dr, dec, radians, sunset angle *this is already in WB functions. Srad is an input
+# then calculate PET (oudin*heat load*shade coeff)
+
+# W - PET
+
+# Soil (inital value of 104)
+
+# Delta soil
+
+# AET (use initial soil value as 104)
+
+# W-ET-Delta soil
+
+# Deficit (PET-AET)
+
+#GDD (based off tmean and Tbase constant[0])
+
