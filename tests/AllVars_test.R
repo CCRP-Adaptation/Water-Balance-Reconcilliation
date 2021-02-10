@@ -1,8 +1,4 @@
-#############################################################################
-######    TEST SNOW-WATER EQUIVALENT AGAINST D. THOMA'S EXCEL MODEL  ########
-#############################################################################
-
-# PACK (D. Thoma) = init.value - melt + snowfall
+## Testing multiple variables to compare to D. Thoma's v2 spreadsheet model
 
 rm(list = ls())
 
@@ -101,11 +97,29 @@ frog$melt <- get_pack_melt(frog$tmean, low_thresh_temp, frog$Hock, frog$snow, p.
 write.csv(frog, "C:/Users/msears/OneDrive - DOI/WB-cross check/SWE_output")
 
 # W (water reaching soil as rain + melt) - rain + melt
+get_W = function(rain, melt){
+  W = (melt+rain)
+  return(W)
+}
+
+frog$W <- get_W(frog$rain, frog$melt)
 
 # PET using Oudin equation - first calculate Oudin location
 # Oudin = if pack>2, 0, if(rad Ra>-5,solar*(rad Ra+5)*.408/100,0) 
 # to get rad Ra determine dr, dec, radians, sunset angle *this is already in WB functions. Srad is an input
 # then calculate PET (oudin*heat load*shade coeff)
+latitude = 44.95354
+
+get_R.a = function(doy, lat, elev){
+  d.r = 1 + 0.033*cos(((2*pi)/365)*doy)
+  declin = 0.409*sin((((2*pi)/365)*doy)-1.39)
+  lat.rad = (pi/180)*lat
+  sunset.ang = acos(-tan(lat.rad)*tan(declin))
+  R.a = ((24*60)/pi)*0.0820*d.r*(sunset.ang*sin(lat.rad)*sin(declin) + cos(lat.rad)*cos(declin)*sin(sunset.ang))
+  return(R.a)
+}
+
+
 
 # W - PET
 
