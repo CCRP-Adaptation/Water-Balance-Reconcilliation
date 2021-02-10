@@ -78,13 +78,15 @@ frog$snow <- get_snow(frog$freeze, frog$precip_mmday)
 get_pack_melt = function(tmean,low_thresh_temp, hock, snow, p.0=NULL){
     p.i = ifelse(!is.null(p.0), p.0, 0)
     melt=c()
-    pack=c()
     for(i in 1:length(tmean)){
       melt[i] = ifelse(tmean[i]<low_thresh_temp||p.i==0, 0, 
                        ifelse((tmean[i]-low_thresh_temp)*hock[i]>p.i, 
                               p.i, (tmean[i]-low_thresh_temp)*hock[i]))
-      pack[i] = p.i+snow[i]-melt[i]
-        p.i=pack[i]
+      pack=c()
+      for (j in 1:length(snow)){
+      pack[j] = p.i+snow[j]-melt[j]
+      p.i=pack[j]
+      }
     }
     return(melt)
     return(pack)
@@ -104,12 +106,10 @@ get_W = function(rain, melt){
 
 frog$W <- get_W(frog$rain, frog$melt)
 
-# PET using Oudin equation - first calculate Oudin location
-# Oudin = if pack>2, 0, if(rad Ra>-5,solar*(rad Ra+5)*.408/100,0) 
-# to get rad Ra determine dr, dec, radians, sunset angle *this is already in WB functions. Srad is an input
-# then calculate PET (oudin*heat load*shade coeff)
+# PET using Oudin equation - first calculate rad Ra, Oudin location, then PET
 latitude = 44.95354
 
+#Get R.a for Oudin location
 get_R.a = function(doy, lat, elev){
   d.r = 1 + 0.033*cos(((2*pi)/365)*doy)
   declin = 0.409*sin((((2*pi)/365)*doy)-1.39)
@@ -119,7 +119,15 @@ get_R.a = function(doy, lat, elev){
   return(R.a)
 }
 
+#Oudin location
+get_Oudin = function(){
+  Oudin = ifelse(pack>2,0,ifelse(tmean>-5,(R.a*(tmean+5)*0.405)/100,0))
+  return(Oudin)
+}
 
+# Heatload (then can determine PET)
+
+# PET
 
 # W - PET
 
