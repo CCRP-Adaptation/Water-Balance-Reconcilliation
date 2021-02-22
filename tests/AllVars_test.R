@@ -74,54 +74,36 @@ frog$snow <- get_snow(frog$freeze, frog$precip_mmday)
 
 #frog$pack <- get_pack(frog$snow, frog$melt, p.0=NULL)
 
-#adding melt and pack loops together
-get_pack_melt = function(tmean,low_thresh_temp, hock, snow, p.0=NULL){
-    p.i = ifelse(!is.null(p.0), p.0, 0)
-    melt=c()
-    for(i in 1:length(tmean)){
-      melt[i] = ifelse(tmean[i]<low_thresh_temp||p.i==0, 0, 
-                       ifelse((tmean[i]-low_thresh_temp)*hock[i]>p.i, 
-                              p.i, (tmean[i]-low_thresh_temp)*hock[i]))
-      pack=c()
-      for (j in 1:length(snow)){
-      pack[j] = p.i+snow[j]-melt[j]
-      p.i=pack[j]
-      melt_pack <- list(melt, pack)
-      }
-    }
-    return(melt_pack)
-}      
-        
-frog$pack <- get_pack_melt(frog$tmean, low_thresh_temp, frog$Hock, frog$snow, p.0=NULL)
-frog$melt <- get_pack_melt(frog$tmean, low_thresh_temp, frog$Hock, frog$snow, p.0=NULL)
 
 ###########################
 test <- frog
-
-# THESE TWO LOOPS WORK
-pack.init <- 0
-for(i in 1:2){
-    for (j in 1:2){
-    test$melt[i] = ifelse(test$tmean[i]<low_thresh_temp||pack.init==0, 0, 
-                     ifelse((test$tmean[i]-low_thresh_temp)*test$Hock[i]>pack.init, 
-                            pack.init, (test$tmean[i]-low_thresh_temp)*test$Hock[i]))
-      test$pack[j] = pack.init+test$snow[j]-test$melt[j]
-    }
-}
-
-p.0=NULL
-p.i = ifelse(!is.null(p.0), p.0, 0)
-
+#this loop works - now need to turn it into function
+test$pack <- 0
 for(i in 1:length(test$tmean)){
-  for (j in 1:(length(test$tmean))){
-    test$melt[i] = ifelse(test$tmean[i]<low_thresh_temp||p.i==0, 0, 
-                          ifelse(((test$tmean[i]-low_thresh_temp)*test$Hock[i])>p.i, 
-                                 p.i, ((test$tmean[i]-low_thresh_temp)*test$Hock[i])))
-    test$pack[j] = p.i+test$snow[j]-test$melt[j]
-    p.i=test$pack[j]
+  for (j in 2:(length(test$tmean))){
+    test$melt[i] = ifelse(test$tmean[i]<low_thresh_temp||test$pack[i-1]==0, 0, 
+                          ifelse(((test$tmean[i]-low_thresh_temp)*test$Hock[i])>test$pack[i-1], 
+                                 test$pack[i-1], ((test$tmean[i]-low_thresh_temp)*test$Hock[i])))
+    test$pack[j] = test$pack[j-1]+test$snow[j]-test$melt[j]
   }
 }
 ############################
+test <- frog
+
+get_pack_melt = function(tmean,low_thresh_temp, hock, snow, pack=0){
+  melt <- vector()
+  pack <- vector()
+  for(i in 1:length(tmean)){
+    for (j in 1:(length(tmean))){
+      melt[i] = ifelse(tmean[i]<low_thresh_temp||p.i==0, 0, 
+                            ifelse(((tmean[i]-low_thresh_temp)*hock[i])>p.i, 
+                                   p.i, ((tmean[i]-low_thresh_temp)*hock[i])))
+      pack[j] = p.i+snow[j]-melt[j]
+      p.i=pack[j]
+    }
+  }
+  return(melt_pack)
+}
 
 test$pack <- get_pack_melt(test$tmean, low_thresh_temp, test$Hock, test$snow, p.0=NULL)
 test$melt <- get_pack_melt(test$tmean, low_thresh_temp, test$Hock, test$snow, p.0=NULL)
