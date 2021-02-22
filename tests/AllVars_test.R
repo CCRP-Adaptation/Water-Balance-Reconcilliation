@@ -86,14 +86,45 @@ get_pack_melt = function(tmean,low_thresh_temp, hock, snow, p.0=NULL){
       for (j in 1:length(snow)){
       pack[j] = p.i+snow[j]-melt[j]
       p.i=pack[j]
+      melt_pack <- list(melt, pack)
       }
     }
-    return(melt)
-    return(pack)
+    return(melt_pack)
 }      
         
 frog$pack <- get_pack_melt(frog$tmean, low_thresh_temp, frog$Hock, frog$snow, p.0=NULL)
 frog$melt <- get_pack_melt(frog$tmean, low_thresh_temp, frog$Hock, frog$snow, p.0=NULL)
+
+###########################
+test <- frog
+
+# THESE TWO LOOPS WORK
+pack.init <- 0
+for(i in 1:2){
+    for (j in 1:2){
+    test$melt[i] = ifelse(test$tmean[i]<low_thresh_temp||pack.init==0, 0, 
+                     ifelse((test$tmean[i]-low_thresh_temp)*test$Hock[i]>pack.init, 
+                            pack.init, (test$tmean[i]-low_thresh_temp)*test$Hock[i]))
+      test$pack[j] = pack.init+test$snow[j]-test$melt[j]
+    }
+}
+
+p.0=NULL
+p.i = ifelse(!is.null(p.0), p.0, 0)
+
+for(i in 1:length(test$tmean)){
+  for (j in 1:(length(test$tmean))){
+    test$melt[i] = ifelse(test$tmean[i]<low_thresh_temp||p.i==0, 0, 
+                          ifelse(((test$tmean[i]-low_thresh_temp)*test$Hock[i])>p.i, 
+                                 p.i, ((test$tmean[i]-low_thresh_temp)*test$Hock[i])))
+    test$pack[j] = p.i+test$snow[j]-test$melt[j]
+    p.i=test$pack[j]
+  }
+}
+############################
+
+test$pack <- get_pack_melt(test$tmean, low_thresh_temp, test$Hock, test$snow, p.0=NULL)
+test$melt <- get_pack_melt(test$tmean, low_thresh_temp, test$Hock, test$snow, p.0=NULL)
 
 ## Write as csv to compare (rain, snow, pack, melt) to DT and MT before moving on
 write.csv(frog, "C:/Users/msears/OneDrive - DOI/WB-cross check/SWE_output")
