@@ -1,9 +1,10 @@
-## Testing multiple variables to compare to D. Thoma's v2 spreadsheet model
+## froging multiple variables to compare to D. Thoma's v2 spreadsheet model
 
 rm(list = ls())
 
 library(lubridate)
 library(dplyr)
+library(REdaS)
 
 ## Input and prep
 
@@ -30,7 +31,7 @@ get_freeze = function(low_thresh_temp, tmean, high_thresh_temp){
 
 frog$freeze <- get_freeze(low_thresh_temp, frog$tmean, high_thresh_temp)
 
-# Get rain - corrpesonds with 'RAIN' in D.Thoma v2model
+# Get rain - corrpesonds with 'RAIN' in D.Thoma v2 model
 get_rain = function(freeze, precip){
   rain = freeze*precip
   return(rain)
@@ -46,50 +47,7 @@ get_snow = function(freeze, precip){
 
 frog$snow <- get_snow(frog$freeze, frog$precip_mmday)
 
-# Get melt
-#get_melt = function(tmean, low_thresh_temp, pack, hock, p.0=NULL){
-#  p.i = ifelse(!is.null(p.0), p.0, 0)
-#  melt = c()
-#  for(i in 1:length(tmean)){
-#    melt[i] = ifelse(tmean[i]<low_thresh_temp||p.i==0, 0, 
-#                     ifelse((tmean[i]-low_thresh_temp)*hock[i]>p.i, 
-#                            p.i, (tmean[i]-low_thresh_temp)*hock[i]))
-#    p.i = pack[i]
-#  }
-#  return(melt)
-#}
-
-#frog$melt <- get_melt(frog$tmean, low_thresh_temp, frog$pack, frog$hock, p.0 = NULL)
-
-# Get pack
-#get_pack = function(snow, melt, p.0=NULL){
-#  p.i = ifelse(!is.null(p.0), p.0, 0)
-#  pack = c()
-#  for (i in 1:length(snow)){
-#    pack[i] = p.i+snow[i]-melt[i]
-#    p.i=pack[i]
-#  }
-#  return(pack)
-#}
-
-#frog$pack <- get_pack(frog$snow, frog$melt, p.0=NULL)
-
-
-###########################
-test <- frog
-#this loop works - now need to turn it into function
-test$pack <- 0
-for(i in 1:length(test$tmean)){
-  for (j in 2:(length(test$tmean))){
-    test$melt[i] = ifelse(test$tmean[i]<low_thresh_temp||test$pack[i-1]==0, 0, 
-                          ifelse(((test$tmean[i]-low_thresh_temp)*test$Hock[i])>test$pack[i-1], 
-                                 test$pack[i-1], ((test$tmean[i]-low_thresh_temp)*test$Hock[i])))
-    test$pack[j] = test$pack[j-1]+test$snow[j]-test$melt[j]
-  }
-}
-############################
-test <- frog
-
+# Get melt - corresponds with 'MELT' in D.Thoma v2 model
 get_melt = function(tmean,low_thresh_temp, hock, snow, pack=0){
   melt <- vector()
   pack <- 0 #this is the init value
@@ -104,8 +62,9 @@ get_melt = function(tmean,low_thresh_temp, hock, snow, pack=0){
   return(melt)
 }
 
-test$melt <- get_melt(test$tmean, low_thresh_temp, test$Hock, test$snow, pack=0)
+frog$melt <- get_melt(frog$tmean, low_thresh_temp, frog$Hock, frog$snow, pack=0)
 
+# Get pack - correspond with 'PACK' in D. Thoma v2 model
 get_pack = function(tmean,low_thresh_temp, hock, snow, pack=0){
   melt <- vector()
   pack <- 0 #this is the init value
@@ -120,10 +79,12 @@ get_pack = function(tmean,low_thresh_temp, hock, snow, pack=0){
   return(pack)
 }
 
-test$pack <- get_pack(test$tmean, low_thresh_temp, test$Hock, test$snow, pack=0)
+frog$pack <- get_pack(frog$tmean, low_thresh_temp, frog$Hock, frog$snow, pack=0)
 
 ## Write as csv to compare (rain, snow, pack, melt) to DT and MT before moving on
-write.csv(frog, "C:/Users/msears/OneDrive - DOI/WB-cross check/SWE_output")
+write.csv(frog, "C:/Users/msears/OneDrive - DOI/WB_crosscheck/firstcheck.csv")
+
+#rain, snow, pack, melt agree with D.Thoma v2 model
 
 # W (water reaching soil as rain + melt) - rain + melt
 get_W = function(rain, melt){
@@ -133,28 +94,41 @@ get_W = function(rain, melt){
 
 frog$W <- get_W(frog$rain, frog$melt)
 
-# PET using Oudin equation - first calculate rad Ra, Oudin location, then PET
-latitude = 44.95354
+# Oudin PET (Oudin location * heatload * PET shade coeff) - corresponds with 'PET' in D. Thoma v2 model
+latitude=44.95354
 
-#Get R.a for Oudin location
-get_R.a = function(doy, lat, elev){
+get_OudinPET = function(doy, lat, pack, tmean, slope, aspect, shadecoeff=1){
   d.r = 1 + 0.033*cos(((2*pi)/365)*doy)
   declin = 0.409*sin((((2*pi)/365)*doy)-1.39)
   lat.rad = (pi/180)*lat
   sunset.ang = acos(-tan(lat.rad)*tan(declin))
   R.a = ((24*60)/pi)*0.0820*d.r*(sunset.ang*sin(lat.rad)*sin(declin) + cos(lat.rad)*cos(declin)*sin(sunset.ang))
-  return(R.a)
-}
-
-#Oudin location
-get_Oudin = function(){
   Oudin = ifelse(pack>2,0,ifelse(tmean>-5,(R.a*(tmean+5)*0.405)/100,0))
-  return(Oudin)
+  Folded_aspect = abs(180-abs((slope)-225))
+  Heatload = (0.339+0.808*cos(deg2rad(lat))*cos(deg2rad(slope)))-(0.196*sin(deg2rad(lat))*sin(deg2rad(slope)))-(0.482*cos(deg2rad(Folded_aspect))*sin(deg2rad(slope)))
+  OudinPET = Oudin* Heatload * shadecoeff
+  return(OudinPET)
 }
 
-# Heatload (then can determine PET)
+frog$PET <- get_OudinPET(frog$yday, latitude, frog$pack, frog$tmean, frog$slope, frog$aspect, shadecoeff=1)
 
-# PET
+# troubleshooting PET
+latitude=44.95354
+
+get_OudinPET = function(doy, lat, pack, tmean, slope, aspect, shadecoeff=1){
+  d.r = 1 + 0.033*cos(((2*3.14159)/365)*doy)
+  declin = 0.409*sin((((2*3.14)/365)*doy)-1.39)
+  lat.rad = (3.14159/180)*lat
+  sunset.ang = acos(-tan(lat.rad)*tan(declin))
+  R.a = ((24*60)/3.14159)*0.082*d.r*((sunset.ang*sin(lat.rad)*sin(declin)) + (cos(lat.rad)*cos(declin)*sin(sunset.ang)))
+  Oudin = ifelse(pack>2,0,ifelse(tmean>-5,((R.a*(tmean+5)*0.408))/100,0))
+  Folded_aspect = abs(180-abs((slope)-225))
+  Heatload = (0.339+0.808*cos(deg2rad(lat))*cos(deg2rad(slope)))-(0.196*sin(deg2rad(lat))*sin(deg2rad(slope)))-(0.482*cos(deg2rad(Folded_aspect))*sin(deg2rad(slope)))
+  OudinPET = Oudin * Heatload * shadecoeff
+  return(OudinPET)
+}
+
+frog$PET <- get_OudinPET(frog$yday, latitude, frog$pack, frog$tmean, slope=2, frog$aspect, shadecoeff=1)
 
 # W - PET
 
