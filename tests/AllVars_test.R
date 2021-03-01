@@ -133,17 +133,56 @@ get_W_PET = function(W, PET){
 frog$W_PET <- get_W_PET(frog$W, frog$PET)
 
 
-# Soil (inital value of 104)
+# Soil (inital & max value of 104, but can edit this in the function variables) - corresponds with 'SOIL' in D. Thoma v2 model
+get_soil_moist = function(W, soil.0=NULL, PET, W_PET, soil_max){
+  soil.i = ifelse(!is.null(soil.0), soil.0,0)
+  soil_moist=c()
+  for(i in 1:length(PET)){
+    soil_moist[i] = ifelse(W[i]>PET[i], min(W[i]-PET[i]+soil.i,soil_max), soil.i*exp(-(PET[i]-W[i])/soil_max))
+    soil.i=soil_moist[i]
+  }
+  return(soil_moist)  
+}
 
-# Delta soil
+frog$soil_moist <- get_soil_moist(frog$W, soil.0=104, frog$PET, frog$W_PET, soil_max=104)
+
+# Delta soil (the initial value can be adjusted in function variables) - corresponds with '/\ SOIL' in D. Thoma v2 model
+get_delta_soil=function(soil_moist, soil_moist_init){
+   delta_soil = soil_moist - lag(soil_moist, default=soil_moist_init)
+}
+
+frog$delta_soil <- get_delta_soil(frog$soil_moist, soil_moist_init=104)
 
 # AET (use initial soil value as 104)
+get_AET=function(W, PET, soil_moist, soil_moist_init){
+  AET = ifelse(W>PET, PET, W + lag(soil_moist, default=soil_moist_init)-soil_moist)
+}
 
-# W-ET-Delta soil
+frog$AET <- get_AET(frog$W, frog$PET, soil_moist_init=104, frog$soil_moist)
 
-# Deficit (PET-AET)
+# W-ET-Delta soil (need to define runoff coeff) - corresponds with 'W-ET-/\SOIL' in D. Thoma v2 model
+get_W_ET_deltasoil=function(precip, W, delta_soil, AET, directrunoff, runoffcoeff){
+  directrunoff = precip*(runoffcoeff/100)
+  W_ET_deltasoil = W-delta_soil-AET+directrunoff
+}
+
+frog$W_ET_deltasoil <- get_W_ET_deltasoil(frog$precip_mmday, runoffcoeff=0, frog$W, frog$delta_soil, frog$AET, frog$directrunoff)
+
+# Deficit (PET-AET) - corresponds with 'D' in D. Thoma v2 model
+get_deficit=function(PET, AET){
+  deficit = PET-AET
+}
+
+frog$deficit <- get_deficit(frog$PET, frog$AET)
 
 #GDD (based off tmean and Tbase constant[0])
+get_GDD = function(tmean, tbase){
+  tb = ifelse(!is.null(tbase), tbase, 0)
+  GDD = ifelse(tmean < tbase, 0, tmean - tb)
+  return(GDD)
+}
+
+frog$GDD <- get_GDD(frog$tmean, tbase=0)
 
 ## Write as csv to compare to DT and MT
 write.csv(frog, "C:/Users/msears/OneDrive - DOI/WB_crosscheck/frog_check.csv")
