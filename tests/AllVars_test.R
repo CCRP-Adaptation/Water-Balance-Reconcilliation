@@ -186,4 +186,3 @@ frog$GDD <- get_GDD(frog$tmean, tbase=0)
 
 ## Write as csv to compare to DT and MT
 write.csv(frog, "C:/Users/msears/OneDrive - DOI/WB_crosscheck/frog_check.csv")
-
