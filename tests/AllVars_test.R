@@ -138,7 +138,7 @@ get_soil_moist = function(W, soil.0=NULL, PET, W_PET, soil_max){
   soil.i = ifelse(!is.null(soil.0), soil.0,0)
   soil_moist=c()
   for(i in 1:length(PET)){
-    soil_moist[i] = ifelse(W[i]>PET[i], min(W[i]-PET[i]+soil.i,soil_max), soil.i*exp(-(PET[i]-W[i])/soil_max))
+    soil_moist[i] = ifelse(W[i]>PET[i], min((W_PET[i]+soil.i),soil_max), soil.i-soil.i*(1-exp(-(PET[i]-W[i])/soil_max)))
     soil.i=soil_moist[i]
   }
   return(soil_moist)  
