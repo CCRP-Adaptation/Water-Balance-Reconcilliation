@@ -1,8 +1,8 @@
 ###################################################################################
 ## WB_functions.R
 ## Functions to calculate water balance variables from input climate data. Based on Dave Thoma's water balance Excel spreadsheet model.
-## Created 10/30/2019 by ARC
-## v01
+## Created 10/30/2019 by ARC, updated 3/10/2021 by MGS
+## v02 DRAFT
 ###################################################################################
 
 #' Freeze factor
@@ -15,6 +15,23 @@
 get_freeze = function(tmean){
   freeze = ifelse(tmean > 6, 1, ifelse(tmean < 0, 0, tmean*(1/6)))
   return(freeze)
+}
+
+#' Freeze factor using Jennings et al. 2018 thresholds to partition rain and snow
+#'
+#' Calculates a freeze factor from 0-1 based on a temperature threshold from Jennings et al. 2018
+#' @param low_thresh_temp the Jennings coefficient minus 3 degrees C.
+#' @param low_thresh_temp the Jennings coefficient plus 3 degrees C.
+#' @param tmean A vector of daily mean temperatures (deg C).
+#' @export
+#' get_J_freeze()
+
+get_J_freeze = function(low_thresh_temp, tmean, high_thresh_temp){
+  freeze = ifelse(
+    tmean <= low_thresh_temp, 0, 
+    ifelse(tmean >= high_thresh_temp,
+           1, (0.167*(tmean-low_thresh_temp))))
+  return(J_freeze)
 }
 
 #' Rain
@@ -43,43 +60,54 @@ get_snow = function(ppt, freeze){
   return(snow)
 }
 
-#' Snowpack
-#'
-#' Calculates snowpack accumulation at time steps, from a time series of precipitation values, freeze factor, and an initial snowpack value
-#' @param ppt A vector of precipitation values.
-#' @param freeze A vector of freeze factor values, calculated from Tmean. Values are 0-1.
-#' @param p.0 (optional) Initial snowpack value. Default is 0.
-#' @export
-#' get_snowpack()
-
-get_snowpack = function(ppt, freeze, p.0=NULL){
-  p.i = ifelse(!is.null(p.0), p.0, 0)
-  snowpack = c()
-  for(i in 1:length(ppt)){
-    snowpack[i] = ((1-freeze[i])^2)*ppt[i] + (1-freeze[i])*p.i
-    p.i = snowpack[i]
-  }
-  return(snowpack)
-}
-
 #' Melt
 #'
-#' Calculates the amount of snowmelt at time steps from snowpack, snowfall, and freeze factor.
-#' @param snowpack A time series vector of snowpack accumulation values.
+#' Calculates the amount of snowmelt at time steps from snowpack, temperature, and Hock melt factor
+#' @param tmean A vector of daily mean temperatures (deg C).
+#' @param low_thresh_temp the Jennings coefficient minus 3 degrees C.
+#' @param hock A melt factor of daily snowmelt when warm enough to melt.
 #' @param snow A time series vector of snowfall values.
-#' @param freeze A vector of freeze factor values, calculated from Tmean. Values are 0-1.
-#' @param p.0 (optional) Initial snowpack value. Default is 0.
+#' @param snowpack A time series vector of snowpack accumulation values. Initial snowpack default value is 0.
+#' @export
+#' get_melt()
+
+get_melt = function(tmean,low_thresh_temp, hock=4, snow, snowpack=0){
+  melt <- vector()
+  snowpack <- 0 #this is the init value
+  for(i in 1:length(tmean)){
+    for (j in 2:(length(tmean))){
+      melt[i] = ifelse(tmean[i]<low_thresh_temp||snowpack[i-1]==0, 0, 
+                       ifelse(((tmean[i]-low_thresh_temp)*hock[i])>snowpack[i-1], 
+                              snowpack[i-1], ((tmean[i]-low_thresh_temp)*hock[i])))
+      snowpack[j] = snowpack[j-1]+snow[j]-melt[j]
+    }
+  }
+  return(melt)
+}
+
+#' Snowpack
+#'
+#' Calculates snowpack accumulation at time steps, from a time series of snowfall and melt.
+#' @param tmean A vector of daily mean temperatures (deg C).
+#' @param low_thresh_temp the Jennings coefficient minus 3 degrees C.
+#' @param hock A melt factor of daily snowmelt when warm enough to melt.
+#' @param snow A time series vector of snowfall values.
+#' @param snowpack A time series vector of snowpack accumulation values. Initial snowpack default value is 0.
 #' @export
 #' get_snowpack()
 
-get_melt = function(snowpack, snow, freeze, p.0=NULL){
-  p.i = ifelse(!is.null(p.0), p.0, 0)
-  melt = c()
-  for(i in 1:length(snowpack)){
-    melt[i] = freeze[i]*(p.i + snow[i])
-    p.i = snowpack[i]
+get_snowpack = function(tmean,low_thresh_temp, hock=4, snow, snowpack=0){
+  snowpack <- vector()
+  snowpack <- 0 #this is the init value
+  for(i in 1:length(tmean)){
+    for (j in 2:(length(tmean))){
+      melt[i] = ifelse(tmean[i]<low_thresh_temp||snowpack[i-1]==0, 0, 
+                       ifelse(((tmean[i]-low_thresh_temp)*hock[i])>snowpack[i-1], 
+                              snowpack[i-1], ((tmean[i]-low_thresh_temp)*hock[i])))
+      snowpack[j] = snowpack[j-1]+snow[j]-melt[j]
+    }
   }
-  return(melt)
+  return(snowpack)
 }
 
 #' Modify PET
@@ -144,6 +172,24 @@ get_AET = function(w, pet, swc, swc.0){
     swc.i = swc[i]
   }
   return(AET)
+}
+
+#' Runoff or excess input greater than soil water holding capacity
+#' 
+#' Calculates runoff at daily timesteps based on water reaching soil surface, AET, change in soil moisture, and a runoff coefficient
+#' @param ppt A vector of precipitation values.
+#' @param W A time series vector of available water for soil charging (rain + snowmelt).
+#' @param D_soil A time series vector of change in soil moisture from previous day.
+#' @param AET A time series vector of actual evapotranspiration.
+#' @param DRO A time series vector of direct runoff or fraction of precipitation shunted to runoff.
+#' @param R_coeff A fraction of precpitation that can be shunted to direct runoff.
+#' @export
+#' get_runoff()
+
+get_runoff=function(ppt, W, D_soil, AET, DRO, R_coeff){
+  DRO = ppt*(R_coeff/100)
+  runoff = W-D_soil-AET+DRO
+  return(runoff)
 }
 
 #' Growing Degree-Days
