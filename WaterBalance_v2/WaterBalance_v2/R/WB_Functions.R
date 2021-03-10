@@ -110,6 +110,19 @@ get_snowpack = function(tmean,low_thresh_temp, hock=4, snow, snowpack=0){
   return(snowpack)
 }
 
+#' Water reaching soil surface as snow plus rain
+#'
+#' Calculates water reaching soil surface using rain and snowmelt. 
+#' @param rain A vector of daily rain.
+#' @param melt A vector of daily snowmelt.
+#' @export
+#' get_W()
+
+get_W = function(rain, melt){
+  W = (melt+rain)
+  return(W)
+}
+
 #' Modify PET
 #'
 #' Modifies PET by heat load according to method by Lutz et al. (2010)
