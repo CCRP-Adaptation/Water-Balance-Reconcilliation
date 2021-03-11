@@ -147,6 +147,19 @@ modify_PET = function(pet, slope, aspect, lat, freeze, shade.coeff=NULL){
   return(PET.Lutz)
 }
 
+#' Water reaching soil surface minus PET
+#'
+#' Calculates water reaching soil surface minues the PET.
+#' @param W A time series vector of water reaching soil surface as snow plus rain
+#' @param PET A time series vector of PET values.
+#' @export
+#' get_W_PET()
+
+get_W_PET = function(W, PET){
+  W_PET = (W-PET)
+  return(W_PET)
+}
+
 #' Soil Water Content (SWC)
 #'
 #' Calculates soil water content from available water (rain + snowmelt), PET, max. water-holding capacity, and initial SWC.
