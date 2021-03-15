@@ -6,34 +6,31 @@
 ###################################################################################
 
 library(REdaS)
+library(raster)
 
-#' Freeze factor
-#'
-#' Calculates a freeze factor from 0-1 based on mean temperature
-#' @param tmean A vector of daily mean temperatures (deg C).
-#' @export
-#' get_freeze()
-
-get_freeze = function(tmean){
-  freeze = ifelse(tmean > 6, 1, ifelse(tmean < 0, 0, tmean*(1/6)))
-  return(freeze)
-}
+## Jennings raster
+#jennings.raster <- raster('merged_jennings2.tif') # Jennings coefficient layer
+#projection <- CRS("+init=epsg:4326") # Lat/Long projection for spatial data
+#coords = cbind(Sites$Lon[i], Sites$Lat[i])
+#sp <- SpatialPoints(coords, proj4string = projection)
+#j_temp = extract(jennings.raster, sp) # The Jennings coefficient = temperature where precip is half snow, half rain
 
 #' Freeze factor using Jennings et al. 2018 thresholds to partition rain and snow
 #'
 #' Calculates a freeze factor from 0-1 based on a temperature threshold from Jennings et al. 2018
-#' @param low_thresh_temp the Jennings coefficient minus 3 degrees C.
-#' @param low_thresh_temp the Jennings coefficient plus 3 degrees C.
+#' @param j_temp the Jennings temperature extracted from the raster based on latitude and longitude
 #' @param tmean A vector of daily mean temperatures (deg C).
 #' @export
-#' get_J_freeze()
+#' get_freeze()
 
-get_J_freeze = function(low_thresh_temp, tmean, high_thresh_temp){
+get_freeze = function(j_temp, tmean){
+  low_thresh_temp = j_temp - 3
+  high_thresh_temp = j_temp + 3
   freeze = ifelse(
     tmean <= low_thresh_temp, 0, 
     ifelse(tmean >= high_thresh_temp,
            1, (0.167*(tmean-low_thresh_temp))))
-  return(J_freeze)
+  return(freeze)
 }
 
 #' Rain
@@ -66,14 +63,15 @@ get_snow = function(ppt, freeze){
 #'
 #' Calculates the amount of snowmelt at time steps from snowpack, temperature, and Hock melt factor
 #' @param tmean A vector of daily mean temperatures (deg C).
-#' @param low_thresh_temp the Jennings coefficient minus 3 degrees C.
+#' @param j_temp the Jennings temperature extracted from the raster based on latitude and longitude
 #' @param hock A melt factor of daily snowmelt when warm enough to melt.
 #' @param snow A time series vector of snowfall values.
 #' @param snowpack A time series vector of snowpack accumulation values. Initial snowpack default value is 0.
 #' @export
 #' get_melt()
 
-get_melt = function(tmean,low_thresh_temp, hock=4, snow, snowpack=0){
+get_melt = function(tmean,low_thresh_temp, hock, snow, snowpack=0){
+  low_thresh_temp = j_temp - 3
   melt <- vector()
   snowpack <- 0 #this is the init value
   for(i in 1:length(tmean)){
@@ -90,24 +88,21 @@ get_melt = function(tmean,low_thresh_temp, hock=4, snow, snowpack=0){
 #' Snowpack
 #'
 #' Calculates snowpack accumulation at time steps, from a time series of snowfall and melt.
-#' @param tmean A vector of daily mean temperatures (deg C).
+#' @param j_temp the Jennings temperature extracted from the raster based on latitude and longitude
 #' @param low_thresh_temp the Jennings coefficient minus 3 degrees C.
-#' @param hock A melt factor of daily snowmelt when warm enough to melt.
 #' @param snow A time series vector of snowfall values.
-#' @param snowpack A time series vector of snowpack accumulation values. Initial snowpack default value is 0.
+#' @param melt A time series vector of snowmelt.
+#' @param sp.0 (optional) Initial snowpack value. Default is 0.
 #' @export
 #' get_snowpack()
 
-get_snowpack = function(tmean,low_thresh_temp, hock=4, snow, snowpack=0){
+get_snowpack = function(j_temp, snow, melt, sp.0=NULL){
+  low_thresh_temp = j_temp - 3
+  sp.i = ifelse(!is.null(sp.0), sp.0, 0)
   snowpack <- vector()
-  snowpack <- 0 #this is the init value
-  for(i in 1:length(tmean)){
-    for (j in 2:(length(tmean))){
-      melt[i] = ifelse(tmean[i]<low_thresh_temp||snowpack[i-1]==0, 0, 
-                       ifelse(((tmean[i]-low_thresh_temp)*hock[i])>snowpack[i-1], 
-                              snowpack[i-1], ((tmean[i]-low_thresh_temp)*hock[i])))
-      snowpack[j] = snowpack[j-1]+snow[j]-melt[j]
-    }
+  for(i in 1:length(melt)){
+    snowpack[i] = sp.i+snow[i]-melt[i]
+    sp.i=snowpack[i]
   }
   return(snowpack)
 }
@@ -172,14 +167,14 @@ get_w_pet = function(w, pet){
 #' @export
 #' get_soil()
 
-get_soil = function(w, swc.0, pet, w_pet, swc.max){
-  swc.i = ifelse(!is.null(swc.0), swc.0, 0)
-  soil = c()
-  for(i in 1:length(w)){
-    soil[i] = ifelse(w[i] > pet[i], min(w_pet[i]+swc.i, swc.max), swc.i-swc.i*(1-exp(-(pet[i]-w[i])/swc.max))
-    swc.i = soil[i]
+get_soil_moist = function(w, swc.0=NULL, pet, w_pet, swc.max){
+  swc.i = ifelse(!is.null(swc.0), swc.0,0)
+  soil=c()
+  for(i in 1:length(pet)){
+    swc[i] = ifelse(W[i]>PET[i], min((W_PET[i]+swc.i),swc.max), swc.i-swc.i*(1-exp(-(PET[i]-W[i])/swc.max)))
+    swc.i=soil[i]
   }
-  return(soil)
+  return(soil)  
 }
 
 #' Daily change in Soil Water Content (SWC)
