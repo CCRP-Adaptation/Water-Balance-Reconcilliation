@@ -116,11 +116,11 @@ get_snowpack = function(tmean,low_thresh_temp, hock=4, snow, snowpack=0){
 #' @param rain A vector of daily rain.
 #' @param melt A vector of daily snowmelt.
 #' @export
-#' get_W()
+#' get_w()
 
-get_W = function(rain, melt){
-  W = (melt+rain)
-  return(W)
+get_w = function(rain, melt){
+  w = (melt+rain)
+  return(w)
 }
 
 #' Modify PET
@@ -150,14 +150,14 @@ modify_PET = function(pet, slope, aspect, lat, freeze, shade.coeff=NULL){
 #' Water reaching soil surface minus PET
 #'
 #' Calculates water reaching soil surface minues the PET.
-#' @param W A time series vector of water reaching soil surface as snow plus rain
-#' @param PET A time series vector of PET values.
+#' @param w A time series vector of water reaching soil surface as snow plus rain
+#' @param pet A time series vector of PET values.
 #' @export
-#' get_W_PET()
+#' get_w_pet()
 
-get_W_PET = function(W, PET){
-  W_PET = (W-PET)
-  return(W_PET)
+get_w_pet = function(w, pet){
+  w_pet = (w-pet)
+  return(w_pet)
 }
 
 #' Soil Water Content (SWC)
@@ -170,15 +170,29 @@ get_W_PET = function(W, PET){
 #' @export
 #' get_soil()
 
-get_soil = function(w, pet, swc.max, swc.0){
+get_soil = function(w, swc.0, pet, w_pet, swc.max){
   swc.i = ifelse(!is.null(swc.0), swc.0, 0)
   soil = c()
   for(i in 1:length(w)){
-    soil[i] = ifelse(w[i] > pet[i], min(w[i]-pet[i]+swc.i, swc.max), swc.i*exp(-(pet[i]-w[i])/swc.max))
+    soil[i] = ifelse(w[i] > pet[i], min(w_pet[i]+swc.i, swc.max), swc.i-swc.i*(1-exp(-(pet[i]-w[i])/swc.max))
     swc.i = soil[i]
   }
   return(soil)
 }
+
+#' Daily change in Soil Water Content (SWC)
+#'
+#' Calculates daily change in soil water content.
+#' @param swc A time series vector of soil water content.
+#' @param swc.0 (optional) The initial soil water content value. Default is 0.
+#' @export
+#' get_d_soil()
+
+get_d_soil=function(swc, swc.0){
+  swc.0 = ifelse(!is.null(swc.0), swc.0, 0)
+  d_soil = swc - lag(swc, default=swc.0)
+  return(d_soil)
+  }
 
 #' Actual Evapotranspiration (AET)
 #'
@@ -204,18 +218,32 @@ get_AET = function(w, pet, swc, swc.0){
 #' 
 #' Calculates runoff at daily timesteps based on water reaching soil surface, AET, change in soil moisture, and a runoff coefficient
 #' @param ppt A vector of precipitation values.
-#' @param W A time series vector of available water for soil charging (rain + snowmelt).
+#' @param w A time series vector of available water for soil charging (rain + snowmelt).
 #' @param D_soil A time series vector of change in soil moisture from previous day.
 #' @param AET A time series vector of actual evapotranspiration.
 #' @param DRO A time series vector of direct runoff or fraction of precipitation shunted to runoff.
-#' @param R_coeff A fraction of precpitation that can be shunted to direct runoff.
+#' @param R.coeff A fraction of precpitation that can be shunted to direct runoff.
 #' @export
 #' get_runoff()
 
-get_runoff=function(ppt, W, D_soil, AET, DRO, R_coeff){
-  DRO = ppt*(R_coeff/100)
-  runoff = W-D_soil-AET+DRO
+get_runoff=function(ppt, w, d_soil, AET, DRO, R.coeff){
+  R.coeff = ifelse(!is.null(R.coeff), R.coeff, 0)
+  DRO = ppt*(R.coeff/100)
+  runoff = w-d_soil-AET+DRO
   return(runoff)
+}
+
+#' Climatic water deficit
+#' 
+#' Calculates daily climatic water deficit, which is PET - AET.
+#' @param pet A time series vector of PET.
+#' @param AET A time series vector of actual evapotranspiration.
+#' @export
+#' get_deficit()
+
+get_deficit=function(pet, AET){
+  deficit = pet-AET
+  return(deficit)
 }
 
 #' Growing Degree-Days
