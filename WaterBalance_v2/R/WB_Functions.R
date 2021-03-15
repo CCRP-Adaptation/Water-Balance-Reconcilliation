@@ -8,7 +8,7 @@
 library(REdaS)
 library(raster)
 
-## Jennings raster
+## Jennings raster - NEED TO CREATE AS A FUNCTION
 #jennings.raster <- raster('merged_jennings2.tif') # Jennings coefficient layer
 #projection <- CRS("+init=epsg:4326") # Lat/Long projection for spatial data
 #coords = cbind(Sites$Lon[i], Sites$Lat[i])
