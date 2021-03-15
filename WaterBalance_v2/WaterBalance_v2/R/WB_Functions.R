@@ -5,6 +5,8 @@
 ## v02 DRAFT
 ###################################################################################
 
+library(REdaS)
+
 #' Freeze factor
 #'
 #' Calculates a freeze factor from 0-1 based on mean temperature
