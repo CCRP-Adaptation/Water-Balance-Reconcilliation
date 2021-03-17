@@ -5,15 +5,21 @@
 ## v02 DRAFT
 ###################################################################################
 
-library(REdaS)
-library(raster)
+#' Freeze factor using Jennings et al. 2018 thresholds to partition rain and snow
+#'
+#' Extracts the 
+#' @param Lon Longitude of the site (degrees).
+#' @param Lat Latitude of the site (degrees).
+#' @export
+#' get_jtemp()
 
-## Jennings raster - NEED TO CREATE AS A FUNCTION
-#jennings.raster <- raster('merged_jennings2.tif') # Jennings coefficient layer
-#projection <- CRS("+init=epsg:4326") # Lat/Long projection for spatial data
-#coords = cbind(Sites$Lon[i], Sites$Lat[i])
-#sp <- SpatialPoints(coords, proj4string = projection)
-#j_temp = extract(jennings.raster, sp) # The Jennings coefficient = temperature where precip is half snow, half rain
+get_jtemp = function(Lon, Lat){
+  j.raster = raster::raster(system.file("extdata","merged_jennings2.tif", package="WaterBalance_v2")) 
+  projection = sp::CRS("+init=epsg:4326")
+  sp = sp::SpatialPoints(coords, proj4string = projection)
+  j_temp = raster::extract(j.raster, sp)
+  return(j_temp)
+}
 
 #' Freeze factor using Jennings et al. 2018 thresholds to partition rain and snow
 #'
