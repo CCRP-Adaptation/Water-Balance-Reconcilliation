@@ -1,11 +1,6 @@
-### Test 2 ###
+### Test 2 - using the package to test ###
 
-## testing multiple variables to compare to D. Thoma's v2 spreadsheet model
-
-library(lubridate)
 library(dplyr)
-library(REdaS)
-library(raster)
 
 ## Input and prep
 
@@ -18,5 +13,10 @@ frog <- read.csv("C:/Users/msears/OneDrive - DOI/WB_crosscheck/FrogRock-inputfor
 frog <- frog %>%
   mutate(tmean = (tmin_degC+tmax_degC)/2)
 
+Lat <- 44.95354
+Lon <- -110.54083
+
 ## Test functions from WB v2 package
+
+frog$jtemp <- get_jtemp(Lat, Lon)
 
