@@ -77,16 +77,15 @@ get_snow = function(ppt, freeze){
 #' @export
 #' get_melt()
 
-get_melt = function(tmean, j_temp, hock, snow, sp.0=NULL){
+get_melt = function(tmean,j_temp, hock, snow, snowpack=0){
   low_thresh_temp = j_temp - 3
-  sp.i = ifelse(!is.null(sp.0), sp.0, 0)
   melt <- vector()
+  snowpack <- 0 #this is the init value
   for(i in 1:length(tmean)){
     for (j in 2:(length(tmean))){
-      melt[i] = ifelse(tmean[i]<low_thresh_temp||sp.i==0, 0, 
-                       ifelse(((tmean[i]-low_thresh_temp)*hock[i])>sp.i, 
-                              sp.i, ((tmean[i]-low_thresh_temp)*hock[i])))
-      sp.i=snowpack[i]
+      melt[i] = ifelse(tmean[i]<low_thresh_temp||snowpack[i-1]==0, 0, 
+                       ifelse(((tmean[i]-low_thresh_temp)*hock[i])>snowpack[i-1], 
+                              snowpack[i-1], ((tmean[i]-low_thresh_temp)*hock[i])))
       snowpack[j] = snowpack[j-1]+snow[j]-melt[j]
     }
   }
@@ -193,7 +192,7 @@ get_soil = function(w, swc.0=NULL, pet, w_pet, swc.max){
 #' @export
 #' get_d_soil()
 
-get_d_soil=function(swc, swc.0){
+get_d_soil=function(swc, swc.0=NULL){
   swc.0 = ifelse(!is.null(swc.0), swc.0, 0)
   d_soil = swc - lag(swc, default=swc.0)
   return(d_soil)
@@ -209,7 +208,7 @@ get_d_soil=function(swc, swc.0){
 #' @export
 #' get_AET()
 
-get_AET = function(w, pet, swc, swc.0){
+get_AET = function(w, pet, swc, swc.0=NULL){
   swc.i = ifelse(!is.null(swc.0), swc.0, 0)
   AET = c()
   for(i in 1:length(w)){
