@@ -2,6 +2,8 @@
 
 library(dplyr)
 
+devtools::load_all()
+
 ## Input and prep
 
 setwd("C:/Users/msears/OneDrive - DOI/WB_crosscheck/")
@@ -30,5 +32,9 @@ frog$snowpack <- get_snowpack(frog$jtemp, frog$snow, frog$melt)
 
 frog$W <- get_w(frog$rain, frog$melt)
 
-frog$PET <- get_OudinPET(frog$d)
+frog$PET <- get_OudinPET(frog$yday, Lat, frog$snowpack, frog$tmean, frog$slope, frog$aspect)
+
+frog$w_pet <- get_w_pet(frog$W, frog$PET)
+
+frog$swc <- get_soil(frog$W, swc.0=104, frog$PET, frog$w_pet, swc.max=104)
 
