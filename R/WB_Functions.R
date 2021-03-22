@@ -77,7 +77,7 @@ get_snow = function(ppt, freeze){
 #' @export
 #' get_melt()
 
-get_melt = function(tmean,low_thresh_temp, hock, snow, snowpack=0){
+get_melt = function(tmean,j_temp, hock, snow, snowpack=0){
   low_thresh_temp = j_temp - 3
   melt <- vector()
   snowpack <- 0 #this is the init value
