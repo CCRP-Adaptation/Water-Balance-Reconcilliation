@@ -86,6 +86,7 @@ get_melt = function(tmean, j_temp, hock, snow, sp.0=NULL){
       melt[i] = ifelse(tmean[i]<low_thresh_temp||sp.i==0, 0, 
                        ifelse(((tmean[i]-low_thresh_temp)*hock[i])>sp.i, 
                               sp.i, ((tmean[i]-low_thresh_temp)*hock[i])))
+      sp.i=snowpack[i]
       snowpack[j] = snowpack[j-1]+snow[j]-melt[j]
     }
   }
