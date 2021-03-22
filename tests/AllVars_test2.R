@@ -6,7 +6,7 @@ devtools::load_all()
 
 ## Input and prep
 
-setwd("C:/Users/msears/OneDrive - DOI/WB_crosscheck/")
+#setwd("C:/Users/msears/OneDrive - DOI/WB_crosscheck/")
 
 frog <- read.csv("C:/Users/msears/OneDrive - DOI/WB_crosscheck/FrogRock-inputforR.csv")
 
