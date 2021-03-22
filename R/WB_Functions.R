@@ -174,7 +174,7 @@ get_w_pet = function(w, pet){
 #' @export
 #' get_soil()
 
-get_soil_moist = function(w, swc.0=NULL, pet, w_pet, swc.max){
+get_soil = function(w, swc.0=NULL, pet, w_pet, swc.max){
   swc.i = ifelse(!is.null(swc.0), swc.0,0)
   soil=c()
   for(i in 1:length(pet)){
