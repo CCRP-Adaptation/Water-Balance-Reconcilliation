@@ -178,7 +178,7 @@ get_soil = function(w, swc.0=NULL, pet, w_pet, swc.max){
   swc.i = ifelse(!is.null(swc.0), swc.0,0)
   soil=c()
   for(i in 1:length(pet)){
-    swc[i] = ifelse(W[i]>PET[i], min((W_PET[i]+swc.i),swc.max), swc.i-swc.i*(1-exp(-(PET[i]-W[i])/swc.max)))
+    soil[i] = ifelse(W[i]>PET[i], min((W_PET[i]+swc.i),swc.max), swc.i-swc.i*(1-exp(-(PET[i]-W[i])/swc.max)))
     swc.i=soil[i]
   }
   return(soil)  
