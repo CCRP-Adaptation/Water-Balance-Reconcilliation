@@ -32,9 +32,13 @@ frog$snowpack <- get_snowpack(frog$jtemp, frog$snow, frog$melt)
 
 frog$W <- get_w(frog$rain, frog$melt)
 
-frog$PET <- get_OudinPET(frog$yday, Lat, frog$snowpack, frog$tmean, frog$slope, frog$aspect)
+frog$PET <- get_OudinPET(frog$yday, Lat, frog$snowpack, frog$tmean, frog$slope, frog$aspect, shade.coeff = 1)
 
 frog$w_pet <- get_w_pet(frog$W, frog$PET)
 
 frog$swc <- get_soil(frog$W, swc.0=104, frog$PET, frog$w_pet, swc.max=104)
+
+frog$delta.soil <- get_d_soil(frog$swc, swc.0=104)
+
+frog$aet <- get_AET(frog$W, frog$PET, frog$swc, swc.0=104)
 
