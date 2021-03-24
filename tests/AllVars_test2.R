@@ -32,11 +32,11 @@ frog$snow <- get_snow(frog$precip_mmday, frog$freeze)
 test$SNOW <- frog$snow - correct$SNOW
 max(test$SNOW)
 
-frog$melt <- get_melt(frog$tmean, frog$jtemp, frog$Hock, frog$snow, sp.0=100) #test to make sure it works with values other than 0
+frog$melt <- get_melt(frog$tmean, frog$jtemp, frog$Hock, frog$snow) #tested to make sure it works with init pack values other than 0
 test$MELT <- frog$melt - correct$MELT
 max(test$MELT)
 
-frog$snowpack <- get_snowpack(frog$jtemp, frog$snow, frog$melt, sp.0=100) #test to make sure it works with values other than 0
+frog$snowpack <- get_snowpack(frog$jtemp, frog$snow, frog$melt) #tested to make sure it works with init pack values other than 0
 test$PACK <- frog$snowpack - correct$PACK
 max(test$PACK)
 
