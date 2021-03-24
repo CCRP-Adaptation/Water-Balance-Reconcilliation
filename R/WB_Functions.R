@@ -77,11 +77,17 @@ get_snow = function(ppt, freeze){
 #' @export
 #' get_melt()
 
-get_melt = function(tmean,j_temp, hock, snow, snowpack=0){
+get_melt = function(tmean,j_temp, hock, snow, sp.0=NULL){
+  sp.0 = ifelse(!is.null(sp.0), sp.0, 0)
   low_thresh_temp = j_temp - 3
   melt <- vector()
-  snowpack <- 0 #this is the init value
-  for(i in 1:length(tmean)){
+  for (i in 1:1){
+    melt[i] = ifelse(tmean[i]<low_thresh_temp||sp.0==0, 0, 
+                     ifelse(((tmean[i]-low_thresh_temp)*hock[i])>sp.0, 
+                            sp.0, ((tmean[i]-low_thresh_temp)*hock[i])))
+  }
+  snowpack = sp.0+snow+melt
+  for(i in 2:length(tmean)){
     for (j in 2:(length(tmean))){
       melt[i] = ifelse(tmean[i]<low_thresh_temp||snowpack[i-1]==0, 0, 
                        ifelse(((tmean[i]-low_thresh_temp)*hock[i])>snowpack[i-1], 
