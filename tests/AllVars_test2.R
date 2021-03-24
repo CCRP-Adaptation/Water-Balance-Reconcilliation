@@ -42,7 +42,7 @@ frog$PET <- get_OudinPET(frog$yday, Lat, frog$snowpack, frog$tmean, slope=2, fro
 test$PET <- frog$PET - correct$PET
 
 #this is from the test 1 that uses 3.14 instead of pi - Thoma did not use "pi" in excel model
-get_OudinPET = function(doy, lat, pack, tmean, slope, aspect, shadecoeff=1){
+get_OudinPET2 = function(doy, lat, pack, tmean, slope, aspect, shadecoeff=1){
   d.r = 1 + 0.033*cos((2*3.14159/365)*doy)
   declin = 0.409*sin((((2*3.14)/365)*doy)-1.39)
   lat.rad = (3.14159/180)*lat
@@ -55,9 +55,9 @@ get_OudinPET = function(doy, lat, pack, tmean, slope, aspect, shadecoeff=1){
   return(OudinPET)
 }
 
-frog$PET2 <- get_OudinPET(frog$yday, Lat, frog$snowpack, frog$tmean, slope=2, frog$aspect, shadecoeff=1)
+frog$PET2 <- get_OudinPET2(frog$yday, Lat, frog$snowpack, frog$tmean, slope=2, frog$aspect, shadecoeff=1)
 test$PET2 <- frog$PET2 - correct$PET # this confirms the only difference in the PET function in WB package is the difference of using pi vs. 3.14
-rm(get_OudinPET)
+rm(get_OudinPET2)
 
 frog$w_pet <- get_w_pet(frog$W, frog$PET2) #using PET2 here or else rest of values won't match - the only difference is a matter of 3.14 vs pi
 test$W...PET <- frog$w_pet - correct$W...PET
@@ -79,3 +79,24 @@ test$D <- frog$D - correct$D
 
 frog$GDD <- get_GDD(frog$tmean)
 test$GDD <- frog$GDD - correct$GDD
+
+#all Vars using WB package were equal to Thoma's spreadsheet values. This is the second check. The difference between check 1 and check 2 uses WB package functions.
+
+#Melt loop currently works - trying to write it better
+get_melt2 = function(tmean,j_temp, hock, snow, sp.0=NULL){
+  sp.i = ifelse(!is.null(sp.0), sp.0, 0)
+  low_thresh_temp = j_temp - 3
+  melt <- vector()
+  for(i in 1:length(tmean)){
+    for (j in 2:(length(tmean))){
+      melt[i] = ifelse(tmean[i]<low_thresh_temp||sp.i==0, 0, 
+                       ifelse(((tmean[i]-low_thresh_temp)*hock[i])>sp.i, 
+                              sp.i, ((tmean[i]-low_thresh_temp)*hock[i])))
+      snowpack[j] = sp.i+snow[j]-melt[j]
+      sp.i=snowpack[j]
+    }
+  }
+  return(melt)
+}
+
+frog$melt2 <- get_melt(frog$tmean, frog$jtemp, frog$Hock, frog$snow)
