@@ -230,7 +230,7 @@ get_AET = function(w, pet, swc, swc.0=NULL){
 #' @export
 #' get_runoff()
 
-get_runoff=function(ppt, w, d_soil, AET, DRO, R.coeff){
+get_runoff=function(ppt, w, d_soil, AET, R.coeff=NULL){
   R.coeff = ifelse(!is.null(R.coeff), R.coeff, 0)
   DRO = ppt*(R.coeff/100)
   runoff = w-d_soil-AET+DRO
@@ -258,8 +258,8 @@ get_deficit=function(pet, AET){
 #' @export
 #' get_GDD()
 
-get_GDD = function(tmean, tbase){
+get_GDD = function(tmean, tbase=NULL){
   tb = ifelse(!is.null(tbase), tbase, 0)
-  GDD = ifelse(tmean < tbase, 0, tmean - tb)
+  GDD = ifelse(tmean < tb, 0, tmean - tb)
   return(GDD)
 }
