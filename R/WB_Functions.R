@@ -7,7 +7,7 @@
 
 #' Freeze factor using Jennings et al. 2018 thresholds to partition rain and snow
 #'
-#' Extracts the 
+#' Extracts the temperature rain-snow threshold determined in Jennings et al. 2018
 #' @param Lon Longitude of the site (degrees).
 #' @param Lat Latitude of the site (degrees).
 #' @export
