@@ -95,6 +95,7 @@ frog$GDD <- get_GDD(frog$tmean)
 test$GDD <- frog$GDD - correct$GDD
 max(test$GDD)
 
+write.csv(frog, "C:/Users/msears/OneDrive - DOI/WB_crosscheck/frog_check2.csv")
 #all Vars using WB package were equal to Thoma's spreadsheet values. This is the second check. The difference between check 1 and check 2 uses WB package functions.
 
 ############################################################################
