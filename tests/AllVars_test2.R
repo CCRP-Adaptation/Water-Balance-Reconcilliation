@@ -59,11 +59,23 @@ frog$PET2 <- get_OudinPET(frog$yday, Lat, frog$snowpack, frog$tmean, slope=2, fr
 test$PET2 <- frog$PET2 - correct$PET # this confirms the only difference in the PET function in WB package is the difference of using pi vs. 3.14
 rm(get_OudinPET)
 
-frog$w_pet <- get_w_pet(frog$W, frog$PET)
+frog$w_pet <- get_w_pet(frog$W, frog$PET2) #using PET2 here or else rest of values won't match - the only difference is a matter of 3.14 vs pi
+test$W...PET <- frog$w_pet - correct$W...PET
 
-frog$swc <- get_soil(frog$W, swc.0=104, frog$PET, frog$w_pet, swc.max=104)
+frog$swc <- get_soil(frog$W, swc.0=104, frog$PET2, frog$w_pet, swc.max=104)
+test$SOIL <- frog$swc - correct$SOIL
 
 frog$delta.soil <- get_d_soil(frog$swc, swc.0=104)
+test$X..SOIL <- frog$delta.soil - correct$X..SOIL
 
-frog$aet <- get_AET(frog$W, frog$PET, frog$swc, swc.0=104)
+frog$aet <- get_AET(frog$W, frog$PET2, frog$swc, swc.0=104)
+test$AET <- frog$aet - correct$AET
 
+frog$runoff <- get_runoff(frog$precip_mmday, frog$W, frog$delta.soil, frog$aet)
+test$W.ET...SOIL <- frog$runoff - correct$W.ET...SOIL
+
+frog$D <- get_deficit(frog$PET2, frog$aet)
+test$D <- frog$D - correct$D
+
+frog$GDD <- get_GDD(frog$tmean)
+test$GDD <- frog$GDD - correct$GDD
