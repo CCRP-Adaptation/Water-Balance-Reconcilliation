@@ -2,7 +2,7 @@
 
 library(dplyr)
 
-devtools::load_all()
+#devtools::load_all()
 
 ## Input and prep
 frog <- read.csv("C:/Users/msears/OneDrive - DOI/WB_crosscheck/FrogRock-inputforR.csv")
@@ -103,24 +103,22 @@ write.csv(frog, "C:/Users/msears/OneDrive - DOI/WB_crosscheck/frog_check2.csv")
 get_melt2 = function(tmean,j_temp, hock, snow, sp.0=NULL){
   sp.0 = ifelse(!is.null(sp.0), sp.0, 0)
   low_thresh_temp = j_temp - 3
+  melt_delta = (tmean-low_thresh_temp)*hock
   melt <- vector()
   for (i in 1:1){
     melt[i] = ifelse(tmean[i]<low_thresh_temp||sp.0==0, 0, 
-                     ifelse(((tmean[i]-low_thresh_temp)*hock[i])>sp.0, 
-                            sp.0, ((tmean[i]-low_thresh_temp)*hock[i])))
+                     ifelse(melt_delta[i]>sp.0, 
+                            sp.0, melt_delta[i]))
   }
   snowpack = sp.0+snow+melt
   for(i in 2:length(tmean)){
-    for (j in 2:(length(tmean))){
-      melt[i] = ifelse(tmean[i]<low_thresh_temp||snowpack[i-1]==0, 0, 
-                       ifelse(((tmean[i]-low_thresh_temp)*hock[i])>snowpack[i-1], 
-                              snowpack[i-1], ((tmean[i]-low_thresh_temp)*hock[i])))
-      snowpack[j] = snowpack[j-1]+snow[j]-melt[j]
-    }
+    melt[i] = ifelse(tmean[i]<low_thresh_temp||snowpack[i-1]==0, 0, 
+                     ifelse(melt_delta[i]>snowpack[i-1], 
+                            snowpack[i-1], melt_delta[i]))
+    snowpack[i] = snowpack[i-1]+snow[i]-melt[i]
   }
   return(melt)
 }
-
 
 frog$melt2 <- get_melt2(frog$tmean, frog$jtemp, frog$Hock, frog$snow)
 
