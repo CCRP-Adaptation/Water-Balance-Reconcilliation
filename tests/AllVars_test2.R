@@ -1,9 +1,9 @@
 ### Test 2 - using the package to test ###
 
 library(dplyr)
+library("WaterBalance")
 
-
-devtools::load_all()
+rm(list=ls())
 
 ## Input and prep
 frog <- read.csv("C:/Users/msears/OneDrive - DOI/WB_crosscheck/FrogRock-inputforR.csv")
@@ -21,9 +21,26 @@ Lon <- -110.54083
 
 ## Test functions from WB v2 package
 
-frog$jtemp <- as.numeric(get_jtemp(Lat, Lon))
+frog$jtemp <- as.numeric(get_jtemp(Lon, Lat))
 
-frog$freeze <- get_freeze(frog$jtemp, frog$tmean)
+get_freeze2 = function(j_temp, tmean){
+  freeze <- vector()
+  freeze[1] = ifelse(tmean[1]<= (j_temp[1]-3),0,
+                     ifelse(tmean[1]>=(j_temp[1]+3),1,
+                            (1/((j_temp[1]+3) - (j_temp[1]-3)))*(tmean[1]-(j_temp[1]-3))))
+  for(i in 2:length(tmean)){
+    freeze[i] = ifelse(
+    tmean[i] <= (j_temp[i]-3), 0, 
+    ifelse(tmean[i] >= (j_temp[i]+3),
+           1, (0.167*(tmean[i]-(j_temp[i]-3)))))
+  }
+  return(freeze)
+}
+
+
+frog$freeze2 <- get_freeze2(frog$jtemp, frog$tmean)
+test$freeze2 <- frog$freeze2 - correct$F
+max(test$freeze2)
 
 frog$rain <- get_rain(frog$precip_mmday,frog$freeze)
 test$RAIN <- frog$rain - correct$RAIN
@@ -150,3 +167,26 @@ get_melt3 = function(tmean,j_temp, hock, snow, sp.0=NULL){
 frog$melt3 <- get_melt3(frog$tmean, frog$jtemp, frog$Hock, frog$snow)
 test$MELT3 <- frog$melt3 - correct$MELT
 max(test$MELT3) #new melt function checks out
+##############
+
+get_melt4 = function(tmean,j_temp, hock, snow, sp.0=NULL){
+  sp.0 = ifelse(!is.null(sp.0), sp.0, 0)
+  melt <- vector()
+  melt[1] = ifelse(tmean[1] < (j_temp[1]-3)||sp.0==0, 0,
+                   ifelse((tmean[1]-(j_temp[1]-3))*hock>sp.0, 
+                          sp.0, (tmean[1]-(j_temp[1]-3))*hock))
+  snowpack <- vector()
+  snowpack[1] = sp.0 + snow[1] - melt[1]
+  for(i in 2:length(tmean)){
+    melt[i] = ifelse(tmean[i]<(j_temp[i]-3) | snowpack[i-1]==0, 0, 
+                     ifelse((tmean[i]-(j_temp[i]-3))*hock>snowpack[i-1], 
+                            snowpack[i-1], (tmean[i]-(j_temp[i]-3))*hock))
+    snowpack[i] = snowpack[i-1]+snow[i]-melt[i]
+  }
+  return(melt)
+}
+
+frog$melt4 <- get_melt4(frog$tmean, frog$jtemp, hock=4, frog$snow)
+test$MELT4 <- frog$melt4 - correct$MELT
+max(test$MELT4) 
+
